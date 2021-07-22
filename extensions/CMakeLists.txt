@@ -1,8 +1,13 @@
 include(QtUtils)
 msvc_registry_search()
-find_qt5(Core Widgets WebSockets)
+# mecab start (add TextToSpeech)
+find_qt5(Core Widgets TextToSpeech WebSockets)
+# mecab end
 cmake_policy(SET CMP0037 OLD)
 
+# mecab start
+link_directories(mecab)
+# mecab end
 add_library(Bing\ Translate MODULE bingtranslate.cpp translatewrapper.cpp network.cpp extensionimpl.cpp)
 add_library(Copy\ to\ Clipboard MODULE copyclipboard.cpp extensionimpl.cpp)
 add_library(DeepL\ Translate MODULE deepltranslate.cpp translatewrapper.cpp network.cpp extensionimpl.cpp)
@@ -46,7 +51,9 @@ target_link_libraries(DeepL\ Translate winhttp Qt5::Widgets)
 target_link_libraries(DevTools\ DeepL\ Translate shell32 winhttp Qt5::Widgets Qt5::WebSockets)
 target_link_libraries(DevTools\ Papago\ Translate shell32 winhttp Qt5::Widgets Qt5::WebSockets)
 target_link_libraries(DevTools\ Systran\ Translate shell32 winhttp Qt5::Widgets Qt5::WebSockets)
-target_link_libraries(Extra\ Window Qt5::Widgets)
+# mecab start (add Qt5::TextToSpeech libmecab)
+target_link_libraries(Extra\ Window Qt5::Widgets Qt5::TextToSpeech libmecab)
+# mecab end
 target_link_libraries(Google\ Translate winhttp Qt5::Widgets)
 target_link_libraries(Lua lua53 Qt5::Widgets)
 target_link_libraries(Regex\ Filter Qt5::Widgets)
@@ -61,5 +68,13 @@ if (NOT EXISTS ${CMAKE_FINAL_OUTPUT_DIRECTORY}/Qt5WebSockets.dll AND NOT EXISTS 
         COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/windeployqt"
         COMMAND set PATH=%PATH%$<SEMICOLON>${qt5_install_prefix}/bin
         COMMAND Qt5::windeployqt --dir ${CMAKE_FINAL_OUTPUT_DIRECTORY} "${CMAKE_FINAL_OUTPUT_DIRECTORY}/DevTools\ DeepL\ Translate.dll"
+        # mecab start
+        COMMAND Qt5::windeployqt --dir ${CMAKE_FINAL_OUTPUT_DIRECTORY} "${CMAKE_FINAL_OUTPUT_DIRECTORY}/Extra\ Window.dll"
+        # mecab end
     )
 endif() 
+
+# mecab start
+file(GLOB MECAB mecab/*)
+file(COPY ${MECAB} DESTINATION ${CMAKE_FINAL_OUTPUT_DIRECTORY})
+# mecab end

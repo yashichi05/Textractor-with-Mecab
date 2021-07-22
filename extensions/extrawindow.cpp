@@ -13,6 +13,12 @@
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QWheelEvent>
+// mecab start
+#include "usemecab.h"
+#include <QTextToSpeech>
+extern const char* ROW_MAX_SENTENCE_SIZE;
+extern const char* SELECT_LANGUAGE;
+// mecab end
 
 extern const char* EXTRA_WINDOW_INFO;
 extern const char* SENTENCE_TOO_BIG;
@@ -156,9 +162,16 @@ class ExtraWindow : public PrettyWindow
 public:
 	ExtraWindow() : PrettyWindow("Extra Window")
 	{
-		ui.display->setTextFormat(Qt::PlainText);
+		// mecab start
+		ui.display->setTextFormat(Qt::RichText);
+		// mecab end
 		if (settings.contains(WINDOW) && QApplication::screenAt(settings.value(WINDOW).toRect().bottomRight())) setGeometry(settings.value(WINDOW).toRect());
 		maxSentenceSize = settings.value(MAX_SENTENCE_SIZE, maxSentenceSize).toInt();
+		
+		// mecab start
+		rowMaxSentenceSize = settings.value(ROW_MAX_SENTENCE_SIZE, rowMaxSentenceSize).toInt();
+		selectLang = settings.value(SELECT_LANGUAGE, selectLang).toString();
+		// mecab end
 
 		for (auto [name, default, slot] : Array<const char*, bool, void(ExtraWindow::*)(bool)>{
 			{ TOPMOST, false, &ExtraWindow::SetTopmost },
@@ -177,6 +190,25 @@ public:
 		{
 			settings.setValue(MAX_SENTENCE_SIZE, maxSentenceSize = QInputDialog::getInt(this, MAX_SENTENCE_SIZE, "", maxSentenceSize, 0, INT_MAX, 1, nullptr, Qt::WindowCloseButtonHint));
 		});
+
+		// mecab start
+		m_speech = new QTextToSpeech(this);
+		const QVector<QLocale> locales = m_speech->availableLocales();
+		QStringList locales_list;
+		for (const QLocale &locale : locales)
+		{
+			locales_list.push_back(locale.name());
+		}
+		getLangSetting(locales_list);
+		menu.addAction(SELECT_LANGUAGE, this, [this, locales_list] {
+			settings.setValue(SELECT_LANGUAGE, selectLang = QInputDialog::getItem(this, SELECT_LANGUAGE, "", locales_list, this->selectLangIndex, nullptr, false, Qt::WindowCloseButtonHint));
+			this->getLangSetting(locales_list);
+		});
+		menu.addAction(ROW_MAX_SENTENCE_SIZE, this, [this] {
+			settings.setValue(ROW_MAX_SENTENCE_SIZE, rowMaxSentenceSize = QInputDialog::getInt(this, ROW_MAX_SENTENCE_SIZE, "", rowMaxSentenceSize, 0, INT_MAX, 1, nullptr, Qt::WindowCloseButtonHint));
+		});
+		// mecab end
+
 		ui.display->installEventFilter(this);
 		ui.display->setMouseTracking(true);
 
@@ -202,8 +234,30 @@ public:
 		historyIndex = sentenceHistory.size() - 1;
 		ui.display->setText(sentence);
 	}
-
+	// mecab start
+	int rowMaxSentenceSize;
+	int selectLangIndex = 0;
+	QString selectLang;
+	QTextToSpeech *m_speech = nullptr;
+	QString speakSentence;
+	// mecab end
 private:
+	// mecab start
+	void getLangSetting(QStringList list)
+	{
+		for (int i = 0; i < list.size(); i++)
+		{
+			if (selectLang == list[i])
+			{
+				selectLangIndex = i;
+				const QVector<QLocale> locales = m_speech->availableLocales();
+				m_speech->setLocale(locales[i]);
+				break;
+			}
+		}
+	};
+	// mecab end
+
 	void SetTopmost(bool topmost)
 	{
 		for (auto window : { winId(), dictionaryWindow.winId() })
@@ -277,7 +331,13 @@ private:
 	bool eventFilter(QObject*, QEvent* event) override
 	{
 		if (useDictionary && event->type() == QEvent::MouseMove) ComputeDictionaryPosition(((QMouseEvent*)event)->localPos().toPoint());
-		if (event->type() == QEvent::MouseButtonPress) dictionaryWindow.hide();
+		if (event->type() == QEvent::MouseButtonPress) 
+		{
+			// mecab start
+			m_speech->say(speakSentence);
+			// mecab end
+			dictionaryWindow.hide();
+		}
 		return false;
 	}
 
@@ -285,6 +345,9 @@ private:
 	{
 		dictionaryWindow.hide();
 		oldPos = event->globalPos();
+		// mecab start
+		m_speech->stop();
+		// mecab end
 	}
 
 	void mouseMoveEvent(QMouseEvent* event) override
@@ -301,7 +364,9 @@ private:
 	}
 
 	bool locked, showOriginal, useDictionary;
-	int maxSentenceSize = 1000;
+	// mecab start
+	int maxSentenceSize = 1000000;
+	// mecab end
 	QPoint oldPos;
 
 	class
@@ -476,6 +541,12 @@ private:
 bool ProcessSentence(std::wstring& sentence, SentenceInfo sentenceInfo)
 {
 	if (sentenceInfo["current select"] && sentenceInfo["text number"] != 0)
-		QMetaObject::invokeMethod(&extraWindow, [sentence = S(sentence)] { extraWindow.AddSentence(sentence); });
+	{
+		// mecab start
+		useMecab mecabRes(sentence, extraWindow.ui, extraWindow.rowMaxSentenceSize);
+		QString speak_sentence = mecabRes.char_sentence;
+		QMetaObject::invokeMethod(&extraWindow, [sentence = S(sentence), speak_sentence] { extraWindow.AddSentence(sentence);extraWindow.speakSentence = speak_sentence; });
+		// mecab end
+	}
 	return false;
 }

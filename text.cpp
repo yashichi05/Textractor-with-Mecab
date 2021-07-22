@@ -18,7 +18,10 @@
 #endif
 
 // If you are updating a previous translation see https://github.com/Artikash/Textractor/issues/313
-
+// mecab start
+const char* ROW_MAX_SENTENCE_SIZE = u8"Row max sentence size";
+const char* SELECT_LANGUAGE = u8"Select language";
+// mecab end
 const char* NATIVE_LANGUAGE = "English";
 const char* ATTACH = u8"Attach to game";
 const char* LAUNCH = u8"Launch game";
