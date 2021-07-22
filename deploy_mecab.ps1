@@ -1,4 +1,4 @@
-Remove-Item -Recurse -Force "Textractor"
+﻿Remove-Item -Recurse -Force "Textractor"
 mkdir -Force -Verbose "Textractor";
 foreach ($file in @(
   "Textractor.exe",
@@ -25,7 +25,7 @@ foreach ($extension in @(
   "Remove Repeated Phrases 2",
   "Remove 30 Repeated Sentences",
   "Replacer",
-  "Styler",【
+  "Styler",
   "Thread Linker"
 ))
 {
@@ -46,9 +46,7 @@ foreach ($file in @(
   "libmecab.dll",
   "mecabrc",
   "dic",
-  "texttospeech",
-  "mecab"
-
+  "texttospeech"
 ))
 {
   copy -Force -Recurse -Verbose -Destination "Textractor/$file" -Path "builds/_x86/$file";
