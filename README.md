@@ -1,0 +1,2 @@
+# Textractor-with-Mecab
+ 
