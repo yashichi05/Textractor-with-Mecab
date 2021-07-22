@@ -17,6 +17,7 @@
 #include "usemecab.h"
 #include <QTextToSpeech>
 extern const char* ROW_MAX_SENTENCE_SIZE;
+extern const char* KATAKANA_SIZE;
 extern const char* SELECT_LANGUAGE;
 // mecab end
 
@@ -169,7 +170,8 @@ public:
 		maxSentenceSize = settings.value(MAX_SENTENCE_SIZE, maxSentenceSize).toInt();
 		
 		// mecab start
-		rowMaxSentenceSize = settings.value(ROW_MAX_SENTENCE_SIZE, rowMaxSentenceSize).toInt();
+		rowMaxText = settings.value(ROW_MAX_SENTENCE_SIZE, rowMaxText).toInt();
+		katakanaSize = settings.value(KATAKANA_SIZE, katakanaSize).toInt();
 		selectLang = settings.value(SELECT_LANGUAGE, selectLang).toString();
 		// mecab end
 
@@ -205,7 +207,10 @@ public:
 			this->getLangSetting(locales_list);
 		});
 		menu.addAction(ROW_MAX_SENTENCE_SIZE, this, [this] {
-			settings.setValue(ROW_MAX_SENTENCE_SIZE, rowMaxSentenceSize = QInputDialog::getInt(this, ROW_MAX_SENTENCE_SIZE, "", rowMaxSentenceSize, 0, INT_MAX, 1, nullptr, Qt::WindowCloseButtonHint));
+			settings.setValue(ROW_MAX_SENTENCE_SIZE, rowMaxText = QInputDialog::getInt(this, ROW_MAX_SENTENCE_SIZE, "", rowMaxText, 0, INT_MAX, 1, nullptr, Qt::WindowCloseButtonHint));
+		});
+		menu.addAction(KATAKANA_SIZE, this, [this] {
+			settings.setValue(KATAKANA_SIZE, katakanaSize = QInputDialog::getInt(this, KATAKANA_SIZE, "", katakanaSize, 0, INT_MAX, 1, nullptr, Qt::WindowCloseButtonHint));
 		});
 		// mecab end
 
@@ -235,7 +240,8 @@ public:
 		ui.display->setText(sentence);
 	}
 	// mecab start
-	int rowMaxSentenceSize;
+	int rowMaxText;
+	int katakanaSize;
 	int selectLangIndex = 0;
 	QString selectLang;
 	QTextToSpeech *m_speech = nullptr;
@@ -543,7 +549,7 @@ bool ProcessSentence(std::wstring& sentence, SentenceInfo sentenceInfo)
 	if (sentenceInfo["current select"] && sentenceInfo["text number"] != 0)
 	{
 		// mecab start
-		useMecab mecabRes(sentence, extraWindow.ui, extraWindow.rowMaxSentenceSize);
+		useMecab mecabRes(sentence, extraWindow.ui, extraWindow.rowMaxText, extraWindow.katakanaSize);
 		QString speak_sentence = mecabRes.char_sentence;
 		QMetaObject::invokeMethod(&extraWindow, [sentence = S(sentence), speak_sentence] { extraWindow.AddSentence(sentence);extraWindow.speakSentence = speak_sentence; });
 		// mecab end

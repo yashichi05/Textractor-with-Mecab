@@ -14,7 +14,7 @@
 class useMecab
 {
 public:
-    useMecab(std::wstring &sentence, Ui::ExtraWindow &ui, int rowMax)
+    useMecab(std::wstring &sentence, Ui::ExtraWindow &ui, int rowMax, int katakanaSize)
     {
         char *argv = "";
         int fontSize = ui.display->font().pointSize();
@@ -26,7 +26,7 @@ public:
 
         mecab = mecab_new(0, &argv);
         convertStr(sentence);
-        outputHtml(sentence, fontSize, row_text_size);
+        outputHtml(sentence, fontSize, row_text_size, katakanaSize);
         sentence += translate_sentence;
     };
     ~useMecab()
@@ -55,7 +55,7 @@ private:
     {
         node_sentence = mecab_sparse_tonode(mecab, char_sentence);
     };
-    void outputHtml(std::wstring &sentence, int fontSize, int allowTextLen)
+    void outputHtml(std::wstring &sentence, int fontSize, int allowTextLen, int kanaSize)
     {
         QString style = "<style>td{padding:0 1px;white-space:nowrap;}</style>";
         QString htmlText = "<tr>";
@@ -74,7 +74,7 @@ private:
                 QString pronounce(node_sentence->feature);
                 QStringList pronounce_list = pronounce.split(QString(","));
 
-                QString topText = "<td align=\"center\" style=\"font-size:" + QString::number(fontSize * 0.75) + "px;\">" + pronounce_list.takeLast() + "</td>";
+                QString topText = "<td align=\"center\" style=\"font-size:" + QString::number(kanaSize == 0?(fontSize * 0.75):kanaSize) + "px;\">" + pronounce_list.takeLast() + "</td>";
                 QString mainText = "<td align=\"center\">" + current_str + "</td>";
 
                 nowTextCount += current_str.length();
